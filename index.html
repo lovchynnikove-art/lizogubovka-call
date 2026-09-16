@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Дзвінок Дарині — ТЕСТ · Даніл</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#272b35; --text:#e8eaf0;
+    --dim:#9aa1b1; --accent:#4c8dff; --ok:#3ecf8e; --stop:#ff5f56; --warn:#ffb020;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+       display:flex;justify-content:center;padding:24px 16px 40px}
+  .wrap{width:100%;max-width:760px}
+  h1{font-size:19px;margin:0 0 4px}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:18px;margin-bottom:14px}
+  .who{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--dim)}
+  .who b{color:var(--text);font-weight:600}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{font:600 15px system-ui;border:0;border-radius:9px;padding:13px 22px;
+         cursor:pointer;color:#0f1115;transition:filter .15s}
+  button:hover:not(:disabled){filter:brightness(1.1)}
+  button:disabled{opacity:.35;cursor:not-allowed}
+  #call{background:var(--ok)}
+  #hang{background:var(--stop);color:#fff}
+  #key1{background:var(--warn);font-size:22px;padding:9px 26px;margin-left:auto}
+  .keyhint{font-size:13px;color:var(--dim);margin-top:10px}
+  .m.key{color:var(--warn);font-size:13px}
+  .dot{width:9px;height:9px;border-radius:50%;background:#555;display:inline-block;
+       margin-right:8px;vertical-align:middle}
+  .dot.live{background:var(--ok);box-shadow:0 0 0 0 rgba(62,207,142,.6);
+            animation:p 1.6s infinite}
+  @keyframes p{70%{box-shadow:0 0 0 9px rgba(62,207,142,0)}
+               100%{box-shadow:0 0 0 0 rgba(62,207,142,0)}}
+  #status{font-size:14px;color:var(--dim)}
+  #log{height:340px;overflow-y:auto;background:#0c0e12;border:1px solid var(--line);
+       border-radius:10px;padding:14px;font-size:14px}
+  .m{margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid #1c1f27}
+  .m:last-child{border:0;margin:0;padding:0}
+  .m .n{font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+        color:var(--dim);margin-bottom:3px}
+  .m.bot .n{color:var(--accent)}
+  .m.you .n{color:var(--ok)}
+  .m.sys{color:var(--warn);font-size:13px}
+  .m.err{color:var(--stop);font-size:13px;white-space:pre-wrap;word-break:break-word}
+  .m.tool .n{color:var(--warn)}
+  .empty{color:#5a6070;font-style:italic}
+  .note{font-size:13px;color:var(--dim);line-height:1.6}
+  .note b{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Дзвінок Дарині</h1>
+  <div class="sub">Розмова йде тільки у вашому браузері. Нікому не телефонують.</div>
+
+  <div class="card">
+    <div class="who">
+      <span>Агент бачить вас як: <b>ТЕСТ · Даніл</b></span>
+      <span>Зміїв</span>
+      <span>клас <b>A</b></span>
+      <span>141 накладна</span>
+      <span>останнє замовлення <b>31.08</b></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin-bottom:14px">
+      <button id="call" disabled>Подзвонити</button>
+      <button id="hang" disabled>Покласти слухавку</button>
+      <button id="key1" disabled title="Працює як клавіша 1 на телефоні">1</button>
+    </div>
+    <div id="status"><span class="dot"></span>Завантаження…</div>
+    <div class="keyhint">Кнопка <b>1</b> (або клавіша 1 на клавіатурі під час розмови) працює як
+      клавіша 1 на телефоні: без неї замовлення не записується.</div>
+  </div>
+
+  <div class="card">
+    <div id="log"><div class="empty">Тут з'явиться розмова…</div></div>
+  </div>
+
+  <div class="card note">
+    <b>Що перевіряти.</b> Скажіть «алло», дочекайтесь привітання і диктуйте позиції.
+    Як закінчите, натисніть <b>1</b>: тільки тоді замовлення записується. Слова «це все»
+    нічого не закінчують. Замовлення піде <b>тільки в Telegram</b>.
+  </div>
+
+</div>
+
+<script>
+// Лог і статус живуть поза модулем, щоб показати навіть помилку завантаження SDK.
+var $log = document.getElementById("log");
+var $st  = document.getElementById("status");
+var $call = document.getElementById("call");
+var $hang = document.getElementById("hang");
+var $key1 = document.getElementById("key1");
+var empty = true;
+
+function add(kind, who, text){
+  if (empty) { $log.innerHTML = ""; empty = false; }
+  var d = document.createElement("div");
+  d.className = "m " + kind;
+  if (who) { var n = document.createElement("div"); n.className = "n";
+             n.textContent = who; d.appendChild(n); }
+  var t = document.createElement("div"); t.textContent = text; d.appendChild(t);
+  $log.appendChild(d); $log.scrollTop = $log.scrollHeight;
+}
+function status(t, live){
+  $st.innerHTML = '<span class="dot' + (live ? ' live' : '') + '"></span>';
+  $st.append(t);
+}
+window.addEventListener("error", function(e){
+  status("Помилка на сторінці", false);
+  add("err", "помилка", (e.message || "невідома") + (e.filename ? "\n" + e.filename + ":" + e.lineno : ""));
+});
+window.addEventListener("unhandledrejection", function(e){
+  status("Помилка", false);
+  add("err", "помилка", String((e.reason && (e.reason.message || e.reason)) || e.reason));
+});
+</script>
+
+<script type="module">
+const PUBLIC_KEY = "71f9e268-26db-4e66-8e4d-278412d79925";
+const SQUAD_ID   = "dc83147d-97b1-477f-874b-f073583b5ffb";
+
+let vapi = null;
+
+try {
+  // jsDelivr загортає CommonJS у ESM, тому справжній клас лежить у .default.
+  // Без цього new Vapi(...) падає ще до того, як кнопка отримає обробник.
+  const mod = await import("https://cdn.jsdelivr.net/npm/@vapi-ai/web@2.7.0/+esm");
+  const Vapi = mod.default?.default ?? mod.default ?? mod;
+
+  if (typeof Vapi !== "function") {
+    throw new Error("SDK завантажився, але клас не знайдено. Тип: " + typeof Vapi);
+  }
+
+  vapi = new Vapi(PUBLIC_KEY);
+
+  vapi.on("call-start", () => {
+    status("Розмова йде. Говоріть у мікрофон.", true);
+    $call.disabled = true; $hang.disabled = false; $key1.disabled = false;
+    add("sys", "", "— дзвінок почався —");
+  });
+
+  vapi.on("call-end", () => {
+    status("Дзвінок завершено", false);
+    $call.disabled = false; $hang.disabled = true; $key1.disabled = true;
+    add("sys", "", "— дзвінок завершено —");
+  });
+
+  vapi.on("message", (m) => {
+    if (m.type === "transcript" && m.transcriptType === "final") {
+      const you = m.role === "user";
+      add(you ? "you" : "bot", you ? "ви" : "Дарина", m.transcript);
+    }
+    if (m.type === "tool-calls" && m.toolCallList) {
+      for (const c of m.toolCallList) {
+        add("tool", "інструмент", (c.function && c.function.name) || c.name || "?");
+      }
+    }
+  });
+
+  vapi.on("error", (e) => {
+    const msg = (e && (e.errorMsg || e.message)) || JSON.stringify(e);
+    status("Помилка", false);
+    $call.disabled = false; $hang.disabled = true;
+    add("err", "помилка", msg);
+  });
+
+  $call.onclick = async () => {
+    try {
+      status("З'єднання…", false);
+      $call.disabled = true;
+      await vapi.start(undefined, undefined, SQUAD_ID);
+    } catch (e) {
+      status("Не вдалося почати дзвінок", false);
+      $call.disabled = false;
+      add("err", "помилка", String((e && e.message) || e));
+    }
+  };
+
+  $hang.onclick = () => vapi.stop();
+
+  // Клавіша «1». У веб-дзвінку Vapi клавіш телефону немає, тому вставляємо в розмову
+  // рівно той рядок, який Vapi додає, коли клієнт натискає 1 на телефоні
+  // (keypadInputPlan: «User's Keypad Entry: 1»). Для агента й для n8n різниці немає.
+  function press1() {
+    if ($key1.disabled) return;
+    try {
+      vapi.send({
+        type: "add-message",
+        message: { role: "user", content: "User's Keypad Entry: 1" },
+        triggerResponseEnabled: true,
+      });
+      add("key", "", "ви натиснули 1");
+    } catch (e) {
+      add("err", "помилка", "Не вдалося надіслати натискання: " + String((e && e.message) || e));
+    }
+  }
+  $key1.onclick = press1;
+  document.addEventListener("keydown", (e) => {
+    if ((e.key === "1" || e.code === "Numpad1") && !e.repeat) { e.preventDefault(); press1(); }
+  });
+
+  $call.disabled = false;
+  status("Готово до дзвінка", false);
+
+} catch (e) {
+  status("Не вдалося завантажити телефон", false);
+  add("err", "помилка завантаження", String((e && e.message) || e));
+}
+</script>
+</body>
+</html>
