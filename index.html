@@ -126,7 +126,7 @@ window.addEventListener("unhandledrejection", function(e){
 
 <script type="module">
 const PUBLIC_KEY = "71f9e268-26db-4e66-8e4d-278412d79925";
-const SQUAD_ID   = "dc83147d-97b1-477f-874b-f073583b5ffb";
+const ASSISTANT_ID = "3ef27d62-a581-4935-bcd6-da7e89161758"; // Дарина 2.2 Диктовка, без сквада (22.09.2026)
 
 let vapi = null;
 
@@ -177,7 +177,7 @@ try {
     try {
       status("З'єднання…", false);
       $call.disabled = true;
-      await vapi.start(undefined, undefined, SQUAD_ID);
+      await vapi.start(ASSISTANT_ID);
     } catch (e) {
       status("Не вдалося почати дзвінок", false);
       $call.disabled = false;
